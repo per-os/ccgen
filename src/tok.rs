@@ -194,7 +194,153 @@ impl Token for Type {
 	out.push_str(self.r#type);
 	out.push(' ');
 	out.push_str(self.name);
-	out.push('\n');
+	out.push_str(";\n");
 	out
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::{
+	super::{
+	    Macro,
+	    Type,
+	    Func,
+	    Variadic,
+	    HeaderGuard,
+	    CXX,
+	    Header
+	},
+	Token,
+	EndToken
+    };
+    #[test]
+    fn r#macro() {
+	let m = Macro::new(
+	    "H",
+	    "1"
+	).token();
+	assert_eq!(&m, "#define H 1\n");
+    }
+
+    #[test]
+    fn r#type() {
+	let t = Type::new(
+	    "size_t",
+	    "unsigned long"
+	).token();
+	assert_eq!(&t, "typedef unsigned long size_t;\n");
+    }
+
+    #[test]
+    fn func() {
+	let f1=  Func::new(
+	    "int",
+	    "printf",
+	    &["const char*"],
+	    Variadic::Variadic
+	).token();
+	let f2 = Func::new(
+	    "void",
+	    "q",
+	    &[],
+	    Variadic::Variadic
+	).token();
+	let f3 = Func::new(
+	    "void",
+	    "q",
+	    &[],
+	    Variadic::Nary
+	).token();
+	let f4 = Func::new(
+	    "void",
+	    "q",
+	    &[
+		"a",
+		"b",
+		"c",
+		"d",
+		"e",
+		"f",
+		"g",
+		"h",
+		"i",
+		"j",
+		"k",
+		"l",
+		"m",
+		"n",
+		"o",
+		"p",
+		"q",
+		"r",
+		"s",
+		"t",
+		"u",
+		"v",
+		"w",
+		"x",
+		"y",
+		"z"
+	    ],
+	    Variadic::Nary
+	).token();
+	assert_eq!(&f1, "int printf(const char*, ...);\n");
+	assert_eq!(&f2, "void q(...);\n");
+	assert_eq!(&f3, "void q();\n");
+	assert_eq!(&f4, "void q(a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z);\n");
+    }
+
+    #[test]
+    fn header_guard() {
+	let h1 = HeaderGuard::new("a", "1").token();
+	let h2 = HeaderGuard::new("a", "").token();
+	let e = HeaderGuard::new("b", "").end_token();
+	assert_eq!(&h1, "#ifndef a\n#define a 1\n");
+	assert_eq!(&h2, "#ifndef a\n#define a \n");
+	assert_eq!(&e, "#endif\n");
+    }
+
+    #[test]
+    fn cxx() {
+	let c = CXX::C;
+	let cxx = CXX::CXX;
+	let cxx_only = CXX::CXXOnly;
+	assert_eq!(&c.token(), "#ifdef __cplusplus\n#error \"This header can only be used by C\"\n#endif\n");
+	assert_eq!(&cxx.token(), "#ifdef __cplusplus\nextern \"C\" {\n#endif\n");
+	assert_eq!(&cxx_only.token(), "#ifndef __cplusplus\n#error \"This header can only be used by C++\"\n#endif\n");
+	assert_eq!(&c.end_token(), "");
+	assert_eq!(&cxx.end_token(), "#ifdef __cplusplus\n}\n#endif\n");
+	assert_eq!(&cxx_only.end_token(), "");
+    }
+
+    #[test]
+    fn header() {
+	let f1=  Func::new(
+	    "int",
+	    "printf",
+	    &["const char*"],
+	    Variadic::Variadic
+	);
+	let t = Type::new(
+	    "size_t",
+	    "unsigned long"
+	);
+	let m = Macro::new(
+	    "H",
+	    "1"
+	);
+	let h = Header::new(
+	    None,
+	    "test.h",
+	    None,
+	    &[f1],
+	    &[m],
+	    &[t],
+	    CXX::CXX,
+	    None,
+	    None
+	).token();
+	assert_eq!(&h, "#ifdef __cplusplus\nextern \"C\" {\n#endif\n\ntypedef unsigned long size_t;\n\n#define H 1\n\nint printf(const char*, ...);\n\n#ifdef __cplusplus\n}\n#endif\n\n");
     }
 }
