@@ -58,7 +58,6 @@ use serde::{
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default)]
 /// Header type
-/// 
 pub enum CXX {
     /// Header only supports C
     C,
@@ -72,7 +71,6 @@ pub enum CXX {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default)]
 /// Variadic function
-///
 pub enum Variadic {
     #[default]
     /// function takes constant (n) number of parameters
@@ -84,7 +82,6 @@ pub enum Variadic {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Copy, Hash, Debug, Default)]
 /// Header
-///
 pub struct Header<'a> {
     path: Option<&'a str>,
     name: &'a str,

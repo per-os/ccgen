@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 use alloc::string::String;
+use core::fmt::Write;
 
 use crate::{
     Header,
@@ -48,7 +49,9 @@ pub trait Token {
     fn token(&self) -> String;
 }
 
-trait EndToken {
+/// Certain items (header guards, language support) require tokens at both the begenning and end of a header
+/// EndToken is for such cases
+pub trait EndToken {
     fn end_token(&self) -> String;
 }
 
@@ -59,6 +62,107 @@ impl Token for String {
 }
 
 impl Token for &str {
+    fn token(&self) -> String {
+	String::from(*self)
+    }
+}
+
+impl Token for u64 {
+    fn token(&self) -> String {
+	let mut s = String::new();
+	let _ = core::write!(s, "{}UL", *self);
+	s
+    }
+}
+
+impl Token for u32 {
+    fn token(&self) -> String {
+	let mut s = String::new();
+	let _ = core::write!(s, "{}", *self);
+	s
+    }
+}
+
+impl Token for u16 {
+    fn token(&self) -> String {
+	let mut s = String::new();
+	let _ = core::write!(s, "{}", *self);
+	s
+    }
+}
+
+impl Token for u8 {
+    fn token(&self) -> String {
+	let mut s = String::new();
+	let _ = core::write!(s, "{}", *self);
+	s
+    }
+}
+
+impl Token for i64 {
+    fn token(&self) -> String {
+	let mut s = String::new();
+	let _ = core::write!(s, "{}L", *self);
+	s
+    }
+}
+
+impl Token for i32 {
+    fn token(&self) -> String {
+	let mut s = String::new();
+	let _ = core::write!(s, "{}", *self);
+	s
+    }
+}
+
+impl Token for i16 {
+    fn token(&self) -> String {
+	let mut s = String::new();
+	let _ = core::write!(s, "{}", *self);
+	s
+    }
+}
+
+impl Token for i8 {
+    fn token(&self) -> String {
+	let mut s = String::new();
+	let _ = core::write!(s, "{}", *self);
+	s
+    }
+}
+
+impl Token for f32 {
+    fn token(&self) -> String {
+	let mut s = String::new();
+	let _ = core::write!(s, "{}", *self);
+	if !s.contains(".") {
+	    s.push('.');
+	}
+	s.push('F');
+	s
+    }
+}
+
+impl Token for f64 {
+    fn token(&self) -> String {
+	let mut s = String::new();
+	let _ = core::write!(s, "{}", *self);
+	if !s.contains(".") {
+	    s.push('.');
+	}
+	s
+    }
+}
+
+impl Token for usize {
+    fn token(&self) -> String {
+	let mut s = String::new();
+	let _ = core::write!(s, "0x{:x}UL", *self);
+	s
+    }
+}
+
+impl Token for char {
     fn token(&self) -> String {
 	String::from(*self)
     }
@@ -342,5 +446,47 @@ mod test {
 	    None
 	).token();
 	assert_eq!(&h, "#ifdef __cplusplus\nextern \"C\" {\n#endif\n\ntypedef unsigned long size_t;\n\n#define H 1\n\nint printf(const char*, ...);\n\n#ifdef __cplusplus\n}\n#endif\n\n");
+    }
+
+    #[test]
+    fn nums() {
+	let a: u64 = 12;
+	let b: u32 = 11;
+	let c: u16 = 10;
+	let d: u8 = 9;
+	let e: i64 = -12;
+	let f: i32 = -11;
+	let g: i16 = -10;
+	let h: i8 = -9;
+	let i: f32 = 1.3;
+	let j: f64 = -1.3;
+	let k: f64 = -1.;
+	let l: f32 = 1002.;
+	let m: usize = 0x1234abcd;
+	assert_eq!(&a.token(), "12UL");
+	assert_eq!(&b.token(), "11");
+	assert_eq!(&c.token(), "10");
+	assert_eq!(&d.token(), "9");
+	assert_eq!(&e.token(), "-12L");
+	assert_eq!(&f.token(), "-11");
+	assert_eq!(&g.token(), "-10");
+	assert_eq!(&h.token(), "-9");
+	assert_eq!(&i.token(), "1.3F");
+	assert_eq!(&j.token(), "-1.3");
+	assert_eq!(&k.token(), "-1.");
+	assert_eq!(&l.token(), "1002.F");
+	assert_eq!(&m.token(), "0x1234abcdUL");
+    }
+
+    #[test]
+    fn r#char() {
+	let a: char = '𐘊';
+	let b: char = '';
+	let c: char = ' ';
+	let d: char = '?';
+	assert_eq!(&a.token(), "𐘊");
+	assert_eq!(&b.token(), "");
+	assert_eq!(&c.token(), " ");
+	assert_eq!(&d.token(), "?");
     }
 }
