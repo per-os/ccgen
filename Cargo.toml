@@ -1,0 +1,16 @@
+[package]
+name = "ccgen"
+version = "0.1.0"
+edition = "2024"
+description = "generate manually maintained C (and C++) headers"
+license = "BSD-3-Clause"
+
+[features]
+tok = []
+
+[dependencies]
+
+[dependencies.serde]
+version = "1.0"
+features = ["derive"]
+optional = true
