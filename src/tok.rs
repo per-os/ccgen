@@ -95,7 +95,7 @@ impl EndToken for CXX {
     }
 }
 
-impl Token for Header {
+impl Token for Header<'_> {
     fn token(&self) -> String {
 	let mut out = String::new();
 	if let Some(guard) =  &self.guard {
@@ -134,7 +134,7 @@ impl Token for Header {
     }
 }
 
-impl Token for HeaderGuard {
+impl Token for HeaderGuard<'_> {
     fn token(&self) -> String {
 	let mut out = String::from("#ifndef ");
 	out.push_str(self.tok);
@@ -147,13 +147,13 @@ impl Token for HeaderGuard {
     }
 }
 
-impl EndToken for HeaderGuard {
+impl EndToken for HeaderGuard<'_> {
     fn end_token(&self) -> String {
 	String::from("#endif\n")
     }
 }
 
-impl Token for Func {
+impl Token for Func<'_> {
     fn token(&self) -> String {
 	let mut out = String::from(self.out);
 	out.push(' ');
@@ -177,7 +177,7 @@ impl Token for Func {
     }
 }
 
-impl Token for Macro {
+impl Token for Macro<'_> {
     fn token(&self) -> String {
 	let mut out = String::from("#define ");
 	out.push_str(self.tok);
@@ -188,7 +188,7 @@ impl Token for Macro {
     }
 }
 
-impl Token for Type {
+impl Token for Type<'_> {
     fn token(&self) -> String {
 	let mut out = String::from("typedef ");
 	out.push_str(self.r#type);

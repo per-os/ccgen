@@ -37,23 +37,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //!
 //! Store information in order to fully generate a C header
 //!
-//! This crate is no_std so that no_std crates can use it
-//! the use of alloc is for efficiency of storage and thus crates
-//! that do not use alloc should
-//! only conditionally include ccgen for header generation
-//!
 //! Features:
 //!
 //! tok - This feature includes the tokenizer which should be used when actually generating the headers
 //! and for simplifing complex headers like an annex K compliant string.h
 //!  This feature requires alloc.
 
+#[cfg(feature = "tok")]
 extern crate alloc;
 
 #[cfg(feature = "tok")]
 pub mod tok;
-
-use alloc::vec::Vec;
 
 #[cfg(feature = "serde")]
 use serde::{
@@ -88,22 +82,22 @@ pub enum Variadic {
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Hash, Debug, Default)]
+#[derive(Clone, Copy, Hash, Debug, Default)]
 /// Header
 ///
-pub struct Header {
-    path: Option<&'static str>,
-    name: &'static str,
-    guard: Option<HeaderGuard>,
-    funcs: Vec<Func>,
-    macros: Vec<Macro>,
-    types: Vec<Type>,
+pub struct Header<'a> {
+    path: Option<&'a str>,
+    name: &'a str,
+    guard: Option<HeaderGuard<'a>>,
+    funcs: &'a [Func<'a>],
+    macros: &'a [Macro<'a>],
+    types: &'a [Type<'a>],
     cxx: CXX,
-    extra: Option<&'static str>,
-    post_extra: Option<&'static str>
+    extra: Option<&'a str>,
+    post_extra: Option<&'a str>
 }
 
-impl Header {
+impl<'a> Header<'a> {
     /// Create new header
     ///
     /// path - path after include/
@@ -124,29 +118,23 @@ impl Header {
     ///
     /// post_extra - other symbols (after end of include guard)
     pub fn new(
-	path: Option<&'static str>,
-	name: &'static str,
-	guard: Option<HeaderGuard>,
-	funcs: &[Func],
-	macros: &[Macro],
-	types: &[Type],
+	path: Option<&'a str>,
+	name: &'a str,
+	guard: Option<HeaderGuard<'a>>,
+	funcs: &'a [Func<'a>],
+	macros: &'a [Macro<'a>],
+	types: &'a [Type<'a>],
 	cxx: CXX,
-	extra: Option<&'static str>,
-	post_extra: Option<&'static str>
+	extra: Option<&'a str>,
+	post_extra: Option<&'a str>
     ) -> Self {
-	let mut f = Vec::new();
-	let mut m = Vec::new();
-	let mut t = Vec::new();
-	f.extend_from_slice(funcs);
-	m.extend_from_slice(macros);
-	t.extend_from_slice(types);
 	Self {
 	    path,
 	    name,
 	    guard,
-	    funcs: f,
-	    macros: m,
-	    types: t,
+	    funcs,
+	    macros,
+	    types,
 	    extra,
 	    post_extra,
 	    cxx
@@ -154,12 +142,12 @@ impl Header {
     }
 
     /// path after include/
-    pub fn path(&self) -> Option<&'static str> {
+    pub fn path(&self) -> Option<&'a str> {
 	self.path
     }
 
     /// name of header
-    pub fn name(&self) -> &'static str {
+    pub fn name(&self) -> &'a str {
 	self.name
     }
 
@@ -169,18 +157,18 @@ impl Header {
     }
 
     /// functions
-    pub fn funcs(&self) -> &[Func] {
-	self.funcs.as_slice()
+    pub fn funcs(&self) -> &'a [Func] {
+	self.funcs
     }
 
     /// macros
-    pub fn macros(&self) -> &[Macro] {
-	self.macros.as_slice()
+    pub fn macros(&self) -> &'a [Macro] {
+	self.macros
     }
 
     /// typedefs
-    pub fn types(&self) -> &[Type] {
-	self.types.as_slice()
+    pub fn types(&self) -> &'a [Type] {
+	self.types
     }
 
     /// language support
@@ -189,12 +177,12 @@ impl Header {
     }
 
     /// other symbols
-    pub fn extra(&self) -> Option<&'static str> {
+    pub fn extra(&self) -> Option<&'a str> {
 	self.extra
     }
 
     /// other symbols (after header guard)
-    pub fn post_extra(&self) -> Option<&'static str> {
+    pub fn post_extra(&self) -> Option<&'a str> {
 	self.post_extra
     }
 }
@@ -202,20 +190,20 @@ impl Header {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Copy, Hash, Debug, Default)]
 /// Typedef
-pub struct Type {
-    name: &'static str,
-    r#type: &'static str
+pub struct Type<'a> {
+    name: &'a str,
+    r#type: &'a str
 }
 
-impl Type {
+impl<'a> Type<'a> {
     /// Create new typedef
     ///
     /// name - name of typedef
     ///
     /// type - type of typedef
     pub fn new(
-	name: &'static str,
-	r#type: &'static str
+	name: &'a str,
+	r#type: &'a str
     ) -> Self {
 	Self {
 	    name,
@@ -224,12 +212,12 @@ impl Type {
     }
 
     /// name of typedef
-    pub fn name(&self) -> &'static str {
+    pub fn name(&self) -> &'a str {
 	self.name
     }
 
     /// type of typedef
-    pub fn r#type(&self) -> &'static str {
+    pub fn r#type(&self) -> &'a str {
 	self.r#type
     }
 }
@@ -237,20 +225,20 @@ impl Type {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Copy, Hash, Debug, Default)]
 /// Header guard
-pub struct HeaderGuard {
-    tok: &'static str,
-    val: &'static str
+pub struct HeaderGuard<'a> {
+    tok: &'a str,
+    val: &'a str
 }
 
-impl HeaderGuard {
+impl<'a> HeaderGuard<'a> {
     /// Create new header guard
     ///
     /// tok - name of guard token
     ///
     /// val - value of guard token
     pub fn new(
-	tok: &'static str,
-	val: &'static str
+	tok: &'a str,
+	val: &'a str
     ) -> Self {
 	Self {
 	    tok,
@@ -259,27 +247,27 @@ impl HeaderGuard {
     }
 
     /// guard token
-    pub fn tok(&self) -> &'static str {
+    pub fn tok(&self) -> &'a str {
 	self.tok
     }
 
     /// value of guard token
-    pub fn val(&self) -> &'static str {
+    pub fn val(&self) -> &'a str {
 	self.val
     }
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Clone, Hash, Debug, Default)]
+#[derive(Clone, Copy, Hash, Debug, Default)]
 /// Function
-pub struct Func {
-    out: &'static str,
-    name: &'static str,
-    params: Vec<&'static str>,
+pub struct Func<'a> {
+    out: &'a str,
+    name: &'a str,
+    params: &'a [&'a str],
     va: Variadic
 }
 
-impl Func {
+impl<'a> Func<'a> {
     /// Create new  function
     ///
     /// out - output type
@@ -290,34 +278,32 @@ impl Func {
     ///
     /// va - arity of function
     pub fn new(
-	out: &'static str,
-	name: &'static str,
-	params: &[&'static str],
+	out: &'a str,
+	name: &'a str,
+	params: &'a[&'a str],
 	va: Variadic
     ) -> Self {
-	let mut p = Vec::new();
-	p.extend_from_slice(params);
 	Self {
 	    out,
 	    name,
 	    va,
-	    params: p
+	    params
 	}
     }
 
     /// output of function
-    pub fn out(&self) -> &'static str {
+    pub fn out(&self) -> &'a str {
 	self.out
     }
 
     /// name of function
-    pub fn name(&self) -> &'static str {
+    pub fn name(&self) -> &'a str {
 	self.name
     }
 
     /// parameters of  function
-    pub fn params(&self) -> &[&'static str] {
-	self.params.as_slice()
+    pub fn params(&self) -> &'a [&'a str] {
+	self.params
     }
 
     /// arity of function
@@ -329,20 +315,20 @@ impl Func {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Copy, Hash, Debug, Default)]
 /// Macro
-pub struct Macro {
-    tok: &'static str,
-    val: &'static str,
+pub struct Macro<'a> {
+    tok: &'a str,
+    val: &'a str,
 }
 
-impl Macro {
+impl<'a> Macro<'a> {
     /// Create new macro
     ///
     /// tok - macro token (contains parameters if function macro)
     /// 
     /// val - value of token
     pub fn new(
-	tok: &'static str,
-	val: &'static str
+	tok: &'a str,
+	val: &'a str
     ) -> Self {
 	Self {
 	    tok,
@@ -351,12 +337,12 @@ impl Macro {
     }
 
     /// tok string
-    pub fn tok(&self) -> &'static str {
+    pub fn tok(&self) -> &'a str {
 	self.tok
     }
 
     /// val string
-    pub fn val(&self) -> &'static str {
+    pub fn val(&self) -> &'a str {
 	self.val
     }
 }
