@@ -89,9 +89,12 @@ pub struct Header<'a> {
     path: Option<&'a str>,
     name: &'a str,
     guard: Option<HeaderGuard<'a>>,
-    funcs: &'a [Func<'a>],
-    macros: &'a [Macro<'a>],
-    types: &'a [Type<'a>],
+    funcs_ptr: usize, // *const Func<'a>
+    num_funcs: usize,
+    macros_ptr: usize, // *const Macro<'a>
+    num_macros: usize,
+    types_ptr: usize, // *const Type<'a>
+    num_types: usize,
     cxx: CXX,
     extra: Option<&'a str>,
     post_extra: Option<&'a str>
@@ -128,16 +131,22 @@ impl<'a> Header<'a> {
 	extra: Option<&'a str>,
 	post_extra: Option<&'a str>
     ) -> Self {
+	let funcs_ptr = funcs.as_ptr() as usize;
+	let macros_ptr=  macros.as_ptr() as usize;
+	let types_ptr = types.as_ptr() as usize;
 	Self {
 	    path,
 	    name,
 	    guard,
-	    funcs,
-	    macros,
-	    types,
+	    funcs_ptr,
+	    macros_ptr,
+	    types_ptr,
 	    extra,
 	    post_extra,
-	    cxx
+	    cxx,
+	    num_funcs: funcs.len(),
+	    num_types: types.len(),
+	    num_macros: macros.len()
 	}
     }
 
@@ -157,18 +166,24 @@ impl<'a> Header<'a> {
     }
 
     /// functions
-    pub fn funcs(&self) -> &'a [Func] {
-	self.funcs
+    pub fn funcs(&self) -> &'a [Func<'a>] {
+	unsafe {
+	    core::slice::from_raw_parts(self.funcs_ptr as *const Func<'a>, self.num_funcs)
+	}
     }
 
     /// macros
-    pub fn macros(&self) -> &'a [Macro] {
-	self.macros
+    pub fn macros(&self) -> &'a [Macro<'a>] {
+	unsafe {
+	    core::slice::from_raw_parts(self.macros_ptr as *const Macro<'a>, self.num_macros)
+	}
     }
 
     /// typedefs
-    pub fn types(&self) -> &'a [Type] {
-	self.types
+    pub fn types(&self) -> &'a [Type<'a>] {
+	unsafe {
+	    core::slice::from_raw_parts(self.types_ptr as *const Type<'a>, self.num_types)
+	}
     }
 
     /// language support
@@ -263,7 +278,8 @@ impl<'a> HeaderGuard<'a> {
 pub struct Func<'a> {
     out: &'a str,
     name: &'a str,
-    params: &'a [&'a str],
+    params_ptr: usize, // *const &'a str
+    num_params: usize,
     va: Variadic
 }
 
@@ -283,11 +299,13 @@ impl<'a> Func<'a> {
 	params: &'a[&'a str],
 	va: Variadic
     ) -> Self {
+	let params_ptr = params.as_ptr() as usize;
 	Self {
 	    out,
 	    name,
 	    va,
-	    params
+	    params_ptr,
+	    num_params: params.len()
 	}
     }
 
@@ -303,7 +321,9 @@ impl<'a> Func<'a> {
 
     /// parameters of  function
     pub fn params(&self) -> &'a [&'a str] {
-	self.params
+	unsafe {
+	    core::slice::from_raw_parts(self.params_ptr as *const &'a str, self.num_params)
+	}
     }
 
     /// arity of function

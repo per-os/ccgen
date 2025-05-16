@@ -104,16 +104,16 @@ impl Token for Header<'_> {
 	}
 	out.push_str(&self.cxx.token());
 	out.push('\n');
-	for i in 0..self.types.len() {
-	    out.push_str(&self.types[i].token());
+	for i in 0..self.num_types {
+	    out.push_str(&self.types()[i].token());
 	}
 	out.push('\n');
-	for i in 0..self.macros.len() {
-	    out.push_str(&self.macros[i].token());
+	for i in 0..self.num_macros {
+	    out.push_str(&self.macros()[i].token());
 	}
 	out.push('\n');
-	for i in 0..self.funcs.len() {
-	    out.push_str(&self.funcs[i].token());
+	for i in 0..self.num_funcs {
+	    out.push_str(&self.funcs()[i].token());
 	}
 	out.push('\n');
 	if let Some(extra) = self.extra {
@@ -159,14 +159,14 @@ impl Token for Func<'_> {
 	out.push(' ');
 	out.push_str(self.name);
 	out.push('(');
-	for i in 0..self.params.len() {
+	for i in 0..self.num_params {
 	    if i != 0 {
 		out.push_str(", ");
 	    }
-	    out.push_str(self.params[i]);
+	    out.push_str(self.params()[i]);
 	}
 	if let Variadic::Variadic = self.va {
-	    if self.params.len() == 0 {
+	    if self.num_params == 0 {
 		out.push_str("...");
 	    } else {
 		out.push_str(", ...");
