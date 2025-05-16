@@ -31,10 +31,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-//! 
-//! 
-//! 
-
 use alloc::string::String;
 
 use crate::{
@@ -49,21 +45,29 @@ use crate::{
 
 /// Create C tokens from item
 pub trait Token {
-    fn tok(&self) -> String;
+    fn token(&self) -> String;
 }
 
 trait EndToken {
-    fn end_tok(&self) -> String;
+    fn end_token(&self) -> String;
 }
 
-impl Token for Header {
-    fn tok(&self) -> String {
+impl Token for String {
+    fn token(&self) -> String {
+	self.clone()
+    }
+}
+
+impl Token for &str {
+    fn token(&self) -> String {
+	String::from(*self)
+    }
+}
+
+impl Token for CXX {
+    fn token(&self) -> String {
 	let mut out = String::new();
-	if let Some(guard) =  &self.guard {
-	    out.push_str(&guard.tok());
-	    out.push('\n');
-	}
-	match self.cxx {
+	match self {
 	    CXX::C => {
 		out.push_str("#ifdef __cplusplus\n#error \"This header can only be used by C\"\n#endif\n");
 	    },
@@ -74,30 +78,52 @@ impl Token for Header {
 		out.push_str("#ifndef __cplusplus\n#error \"This header can only be used by C++\"\n#endif\n");
 	    }
 	}
+	out
+    }
+}
+
+impl EndToken for CXX {
+    fn end_token(&self) -> String {
+	let mut out = String::new();
+	match self {
+	    CXX::CXX => {
+		out.push_str("#ifdef __cplusplus\n}\n#endif\n");
+	    },
+	    _ => {}
+	}
+	out
+    }
+}
+
+impl Token for Header {
+    fn token(&self) -> String {
+	let mut out = String::new();
+	if let Some(guard) =  &self.guard {
+	    out.push_str(&guard.token());
+	    out.push('\n');
+	}
+	out.push_str(&self.cxx.token());
+	out.push('\n');
 	for i in 0..self.types.len() {
-	    out.push_str(&self.types[i].tok());
+	    out.push_str(&self.types[i].token());
 	}
 	out.push('\n');
 	for i in 0..self.macros.len() {
-	    out.push_str(&self.macros[i].tok());
+	    out.push_str(&self.macros[i].token());
 	}
 	out.push('\n');
 	for i in 0..self.funcs.len() {
-	    out.push_str(&self.funcs[i].tok());
+	    out.push_str(&self.funcs[i].token());
 	}
 	out.push('\n');
 	if let Some(extra) = self.extra {
 	    out.push_str(extra);
 	    out.push('\n');
 	}
-	match self.cxx {
-	    CXX::CXX => {
-		out.push_str("#ifdef __cplusplus\n}\n#endif\n");
-	    },
-	    _ => {}
-	}
+	out.push_str(&self.cxx.end_token());
+	out.push('\n');
 	if let Some(guard) = &self.guard {
-	    out.push_str(&guard.end_tok());
+	    out.push_str(&guard.end_token());
 	    out.push('\n');
 	}
 	if let Some(post_extra) = &self.post_extra {
@@ -109,7 +135,7 @@ impl Token for Header {
 }
 
 impl Token for HeaderGuard {
-    fn tok(&self) -> String {
+    fn token(&self) -> String {
 	let mut out = String::from("#ifndef ");
 	out.push_str(self.tok);
 	out.push_str("\n#define ");
@@ -122,13 +148,13 @@ impl Token for HeaderGuard {
 }
 
 impl EndToken for HeaderGuard {
-    fn end_tok(&self) -> String {
+    fn end_token(&self) -> String {
 	String::from("#endif\n")
     }
 }
 
 impl Token for Func {
-    fn tok(&self) -> String {
+    fn token(&self) -> String {
 	let mut out = String::from(self.out);
 	out.push(' ');
 	out.push_str(self.name);
@@ -139,7 +165,7 @@ impl Token for Func {
 	    }
 	    out.push_str(self.params[i]);
 	}
-	if let(Variadic::Variadic) = self.va {
+	if let Variadic::Variadic = self.va {
 	    if self.params.len() == 0 {
 		out.push_str("...");
 	    } else {
@@ -152,7 +178,7 @@ impl Token for Func {
 }
 
 impl Token for Macro {
-    fn tok(&self) -> String {
+    fn token(&self) -> String {
 	let mut out = String::from("#define ");
 	out.push_str(self.tok);
 	out.push(' ');
@@ -163,7 +189,7 @@ impl Token for Macro {
 }
 
 impl Token for Type {
-    fn tok(&self) -> String {
+    fn token(&self) -> String {
 	let mut out = String::from("typedef ");
 	out.push_str(self.r#type);
 	out.push(' ');
