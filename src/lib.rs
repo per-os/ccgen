@@ -64,7 +64,9 @@ pub enum CXX {
     #[default]
     /// Header supports both C and C++
     CXX,
-    /// Header only supports C++ (library is responsible for making sure C++ name mangling is done correctly)
+    /// Header only supports C++ (Your library is responsible for making sure C++ name mangling is done correctly)
+    ///
+    /// Use [cxx-mangle](https://crates.io/crates/cxx_mangle) to manually mangle names and then expose the mangled symbols as extern "C"
     CXXOnly
 }
 
